@@ -161,7 +161,7 @@ def nearfield_imager(visibilities, baseline_indices, freqs, npix_p, npix_q, exte
     return img
 
 
-def calibrate(vis, modelvis, maxiter=30, amplitudeonly=True):
+def calibrate(vis, modelvis, maxiter=30, amplitudeonly=True, initial_gains=None):
     """
     Calibrate and subtract some sources
 
@@ -170,6 +170,7 @@ def calibrate(vis, modelvis, maxiter=30, amplitudeonly=True):
         modelvis: model visibility matrices, shape [n_dir, n_st, n_st]
         maxiter: max iterations (default 30)
         amplitudeonly: fit only amplitudes (default True)
+        initial_gains: initial estimate for gain solution (np.ndarray((ndir, nst), dtype = np.complex128))
 
     Returns:
         residual: visibilities with calibrated directions subtracted, shape [n_st, n_st]
@@ -177,7 +178,12 @@ def calibrate(vis, modelvis, maxiter=30, amplitudeonly=True):
     """
     nst = vis.shape[1]
     ndir = np.array(modelvis).shape[0]
-    gains = np.ones([ndir, nst], dtype=np.complex128)
+    if not isinstance(initial_gains, np.ndarray) or not (initial_gains.shape == (ndir, nst,) and initial_gains.dtype == np.complex128):
+        if isinstance(initial_gains, np.ndarray):
+            print("Initial gain solution passed does not meet expectations, (({ndir=}, {nst=}) != {initial_gains.shape=}, or {initial_gains.dtype=} != np.complex128)")
+        gains = np.ones([ndir, nst], dtype=np.complex128)
+    else:
+        gains = initial_gains.copy()
 
     if ndir == 0:
         return vis, gains
